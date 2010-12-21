@@ -23,8 +23,10 @@ public class BloomFilter {
 	// hash function factors
 	private long [][] hashFunctions;
 	
-
-	public BloomFilter(int filter_size, int expected_number_of_objects) {
+	
+	public BloomFilter(long seed, int filter_size, int expected_number_of_objects) {
+		r.setSeed(seed);
+		
 		bitSet = new BitSet(filter_size);
 		this.filterSize = filter_size;
 		this.expectedNumberOfObjects = expected_number_of_objects;

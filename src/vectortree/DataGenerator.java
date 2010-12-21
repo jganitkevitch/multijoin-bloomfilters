@@ -126,7 +126,6 @@ public class DataGenerator {
 		for (int t : test)
 			System.out.print(t + "  ");
 		System.out.println();
-
 	}
 }
 
