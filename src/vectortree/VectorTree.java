@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 
 
 public class VectorTree {
@@ -516,7 +517,59 @@ public class VectorTree {
 		System.out.println(s1.size() + " gold");
 	}
 
+	
+	public static void testMultiIntersect(int num) {
+		
+		System.err.print("Initializing.. ");
+		
+		ArrayList<VectorTree> vector_trees = new ArrayList<VectorTree>(num);
+		int[][] key_sets = new int[num][];
+		
+		for (int i=0; i<num; i++)
+			vector_trees.add(new VectorTree());
+		
+		key_sets[0] = DataGenerator.generateUniform(100000, 20);
+		for (int i=1; i<num; i++)
+			key_sets[0] = DataGenerator.generateOverlapping(100000, key_sets[0], 30);
+		
+		System.err.print("..done.");
+		System.err.print("Inserting.. ");
+
+		for (int i=0; i<num; i++) {
+			VectorTree vt = vector_trees.get(i);
+			for (int j=0; j<key_sets[i].length; j++) {
+				Record record = new Record();
+				record.set("1", key_sets[i][j]);
+			
+				vt.insert(record.get("1"), record);
+			}
+		}
+		System.err.println("..done.");
+		
+		trace("leaves/subnodes: " + vector_trees.get(0)._root.getLeaves() + "/" + vector_trees.get(0)._root.getSubnodes());
+
+		System.err.println("Intersecting.. ");
+		VectorTreeIterator iterator = VectorTree.intersect(vector_trees);
+		System.err.println("..done.");
+		
+		System.out.println("Trial:");
+		int counter = 0;
+		while(iterator.hasNext()) {
+			System.out.println("    " + iterator.next());
+			counter++;
+		}
+		
+		System.out.println(counter + " total");
+		System.out.println("\npreparing gold...");
+		
+//		HashSet<Integer> s1 = new HashSet<Integer>(vt1list);		
+//		s1.retainAll(vt2list);
+////		s1.retainAll(vt3list);
+//
+//		System.out.println(s1.size() + " gold");
+	}
+	
 	public static void main(String[] args) throws IOException {
-		test2();
+		testMultiIntersect(4);
 	}
 }
