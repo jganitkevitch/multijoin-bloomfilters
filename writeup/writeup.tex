@@ -102,12 +102,11 @@ Here, we implement an intersection strategy previously proposed,
 which represents the ordered sets by multi-bit offsets, organized hierarchically,
 as in a search tree.  This structure gives rise to an efficient intersection procedure
 which is described below.
-% TODO – Do we need related works?
-% TODO – Update future work
+
 The rest of the paper is organized as follows: related works
-are described in section 2, the algorithm and associated data structures are
-described in section 3, significant cases are discussed in section 4, future work is
-discussed in section 5, and the conclusion in section 6.
+are described in Section 2, the algorithm and associated data structures are
+described in Section 3, significant cases are discussed in Section 4, future work is
+discussed in Section 5, and the conclusion in Section 6.
 
 
 %%%%%%%%%%
@@ -192,9 +191,7 @@ which correspond to records.  This distinction is determined by the requester.
 
 \begin{figure}[t]
 \center
-  %\fbox{
 \includegraphics[width=90mm]{db-join.pdf}
-%}
 \caption{A simple database join.}
 \label{fig:db-join}
 \end{figure}
@@ -223,7 +220,7 @@ an identity, where $\oplus$ is the append operator:
 \paragraph{}
 Formally, a Vector Tree $T$ consists of a hash table called
 {\tt nodes}, which maps bitvectors to a finite set of tuples, each
-of which is a node in the tree.  These tuples are of the form $(c, m, p)$,
+corresponding to a node in the tree.  These tuples are of the form $(c, m, p)$,
 where $c \in [0, 2^{2^i}]$ indicates the current bit configuration,
 $m$ the number of leaf nodes (equivalent to the number of unique
 keys that have been inserted into that node's subtrees), and $p$
@@ -232,7 +229,7 @@ Tree has an additional hash table called {\tt registrants}, which maps
 full keys to lists of objects that are associated with them.
 
 \paragraph{}
-The Vector Tree also support several operations:
+The Vector Tree support several operations:
 
 \begin{itemize}
 	\item Insertion
@@ -250,17 +247,15 @@ although without the root-size reduction in range at each level, or to a suffix 
 which the bit-vectors are symbols in alphabet of size $2^i$.
 
 \begin{figure}[t]
-\center
-  %\fbox{
-\includegraphics[width=75mm]{example-vector.pdf}
-%}
-\caption{An example bit-vector for $i=4$.}
-\label{fig:example-vector}
+	\center
+	\includegraphics[width=75mm]{example-vector.pdf}
+	\caption{An example bit-vector for $i=4$.}
+	\label{fig:example-vector}
 \end{figure}
 
 \subsection{Encoding}
 For a Vector Tree $T$ over the universe $0$ to $2^m - 1$, the root node
-encodes $sig_i(key, 0)$ in a bit vector of length $2^i$,
+encodes $sig_i(key, 0)$ in a bit-vector of length $2^i$,
 with each bit corresponding to one of the $2^i$ combinations possible
 among $i$ bits.  For example, where $i=4$, the 4-bit sequence {\tt 0000}
 would correspond to the first of the vector's 16 elements.  This is illustrated
@@ -270,35 +265,38 @@ in Figure \ref{fig:example-vector}.
 Just as the root node, with depth 0, encodes the sequence $sig_i(key, 0)$,
 nodes at depth 1 encode the sequence $sig_i(key, 1)$, and,
 in general, nodes at depth $d$ encode $sig_i(key, d)$.  Nodes at the
-same depth, but which do not share a parent (i.e., ``cousin'' nodes)
-encode the same subrange of the key's vector, but necessarily differ
-in the bit sequence which precedes the sequence they encode.  This
-preceding sequence is called the node's bit prefix.
+same depth, but which do not share a parent encode the same $i$-bits
+of the key, but they necessarily differ in the bit sequence which precedes
+the sequence they encode.  This preceding sequence is called the node's
+bit prefix.
 
 \paragraph{}
-An ``on" ({\tt 1}) bit in the root node's bit vector indicates the existence
+An ``on" ({\tt 1}) bit in the root node's bit-vector guarantees the existence
 of at least one key whose first $i$ bits match the $i$-bit combination
-indicated by the bit vector.  Correspondingly, an ``off" bit ({\tt 0}) indicates
+indicated by the bit-vector.  Correspondingly, an ``off" bit ({\tt 0}) indicates
 the absence of any such element.  For example, in the case $i=4$,
-if the root node's bit vector is {\tt 1000000000000001}, then the tree is
+if the root node's bit-vector is {\tt 1000000000000001}, then the tree is
 guaranteed to contain at least one key $k_1$ with $sig_4(k_1, 0) = {\tt 0000}$
-and at least one key $k_2$ with $sig_4(k_2, 0)={\tt 1111}$.
+and at least one key $k_2$ with $sig_4(k_2, 0)={\tt 1111}$.  Similarly, a node's
+bitvector will never contain only zeros, because this would indicate there are
+no values in this range, in which case the node does not exist (it may be created
+in a subsequent {\tt Insert} operation).
 
 \subsubsection{Node Hierarchy}
 Unlike typical tree structures, in which a parent node contains
 pointers to its child nodes, nodes in the Vector Tree, parents and children have no
 direct connection. Instead, the hash table {\tt Nodes} is used for random-access to any
 node in tree.  This is possible because every node in the tree (and, more strongly,
-every possible node) can be uniquely specified by its bit-vector.  For example,
-the bit-prefix {\tt 00000000} specifies the left-most node at a depth of 2, and the
+every possible node) can be uniquely specified by its bit-vector.  For example, assuming
+$i=4$, the bit-prefix {\tt 00000000} specifies the left-most node at a depth of 2.  The
 empty bit-prefix specifies the root (which is the initial position and has no prefix).
 
 \subsubsection{Leaves}
 Unlike other nodes, a materialized leaf node contains a table, which, for all keys
 in the node's $2^i$ value range, maps each key to a list of object references.
-This allows for the recovery of all associated objects, for example, the row of
-which this key is a column-value or the class instance of which this key is a member
-variable.
+This allows for the constant-time recovery of all associated objects, for example,
+the record of which this key is a column-value or the class instance of which this
+key is a member.
 
 
 
@@ -309,10 +307,9 @@ variable.
 \subsection{Operations}
 
 \begin{figure*}[t]
-\center
-\fbox{
-\includegraphics[width=6in]{insertion-05.pdf}
-}
+	\center
+	\fbox{
+		\includegraphics[width=6in]{insertion-05.pdf}}
 \caption{Insertion of a key.}
 \label{fig:insertion-diagram}
 \end{figure*}
