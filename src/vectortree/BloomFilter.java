@@ -1,8 +1,9 @@
 package vectortree;
 
-import java.util.Random;
-import java.util.BitSet;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Random;
 
 public class BloomFilter {
 
@@ -19,19 +20,19 @@ public class BloomFilter {
 
 	// random number generator
 	private Random r = new Random();
-	
+
 	// hash function factors
 	private long [][] hashFunctions;
-	
-	
+
+
 	public BloomFilter(long seed, int filter_size, int expected_number_of_objects) {
 		r.setSeed(seed);
-		
+
 		bitSet = new BitSet(filter_size);
 		this.filterSize = filter_size;
 		this.expectedNumberOfObjects = expected_number_of_objects;
 		bigPrime = getPrimeLargerThan(filter_size);
-		
+
 		initializeHashFunctions();
 	}
 
@@ -50,7 +51,7 @@ public class BloomFilter {
 		}
 		return true;
 	}
-	
+
 	public int intersect(BloomFilter other) {
 		BitSet intersection = (BitSet) this.bitSet.clone();
 		intersection.and(other.bitSet);
@@ -59,14 +60,14 @@ public class BloomFilter {
 
 	private void initializeHashFunctions() {
 		int number_of_hash_functions;
-		
+
 		int big_prime_int = (int) bigPrime;
 		number_of_hash_functions = (int) Math.floor(Math.log(2) * bitSet.size() / expectedNumberOfObjects);
-		
+
 		System.err.println(number_of_hash_functions);
-		
+
 		if (number_of_hash_functions == 0) number_of_hash_functions = 1;
-		
+
 		hashFunctions = new long[number_of_hash_functions][2];
 		for (long [] h : hashFunctions) {
 			h[0] = (long) r.nextInt(big_prime_int) + 1;
@@ -92,22 +93,43 @@ public class BloomFilter {
 		} while (ret.compareTo(maxLong) > 1);
 		return ret.longValue();
 	}
+
+	public static int intersectMutiway(ArrayList<BloomFilter> bloom_filters) {
+		
+		// if we are passed no bloom filters, indicate no overlap
+		if (bloom_filters.size() == 0) {
+			return 0;
+		}
+		
+		BloomFilter initial_filter = bloom_filters.get(0);
+
+		BitSet intersection = (BitSet) initial_filter.bitSet.clone();
+				
+		for (BloomFilter bloom_filter : bloom_filters) {
+			intersection.and(bloom_filter.bitSet);
+		}
+
+		return (intersection.cardinality() / initial_filter.hashFunctions.length);
+	}
 	
 	public static void main(String[] args) {
 		BloomFilter bf1 = new BloomFilter(1l, 1 << 20, 100000);
 
 		bf1.add(1);
-		System.out.println(bf1.bitSet);
+		System.out.println("bf1 1: " + bf1.bitSet);
 		bf1.add(2);
-		System.out.println(bf1.bitSet);
+		System.out.println("bf1 2: " + bf1.bitSet);
 		bf1.add(3);
-		System.out.println(bf1.bitSet);
-		
+		System.out.println("bf1 3: " + bf1.bitSet);
+		bf1.add(3);
+		bf1.add(4);
+
 		BloomFilter bf2 = new BloomFilter(1l, 1 << 20, 100000);
 		bf2.add(1);
-		System.out.println(bf2.bitSet);
-		
+		bf2.add(3);
+		System.out.println("bf2: " + bf2.bitSet);
+
 		System.out.println(bf1.intersect(bf2));
-		
+
 	}
 }
