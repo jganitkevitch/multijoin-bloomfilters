@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 
 
 public class VectorTree {
@@ -528,11 +527,11 @@ public class VectorTree {
 		for (int i=0; i<num; i++)
 			vector_trees.add(new VectorTree());
 		
-		key_sets[0] = DataGenerator.generateUniform(100000, 20);
+		key_sets[0] = DataGenerator.generateUniform(300000, 0.2);
 		for (int i=1; i<num; i++)
-			key_sets[0] = DataGenerator.generateOverlapping(100000, key_sets[0], 30);
+			key_sets[i] = DataGenerator.generateOverlapping(100000, key_sets[0], 0.3);
 		
-		System.err.print("..done.");
+		System.err.println("..done.");
 		System.err.print("Inserting.. ");
 
 		for (int i=0; i<num; i++) {
@@ -549,8 +548,17 @@ public class VectorTree {
 		trace("leaves/subnodes: " + vector_trees.get(0)._root.getLeaves() + "/" + vector_trees.get(0)._root.getSubnodes());
 
 		System.err.println("Intersecting.. ");
-		VectorTreeIterator iterator = VectorTree.intersect(vector_trees);
-		System.err.println("..done.");
+		VectorTreeIterator iterator;
+		
+		final long startTime = System.nanoTime();
+		final long endTime;
+		try {
+			iterator = VectorTree.intersect(vector_trees);
+		} finally {
+		  endTime = System.nanoTime();
+		}
+		final long duration = endTime - startTime;
+		System.err.println("..done (" + (duration / 1000000.0) + "ms).");
 		
 		System.out.println("Trial:");
 		int counter = 0;

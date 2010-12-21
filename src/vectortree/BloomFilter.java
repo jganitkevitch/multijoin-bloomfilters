@@ -50,6 +50,12 @@ public class BloomFilter {
 		}
 		return true;
 	}
+	
+	public int intersect(BloomFilter other) {
+		BitSet intersection = (BitSet) this.bitSet.clone();
+		intersection.and(other.bitSet);
+		return (intersection.cardinality() / hashFunctions.length);
+	}
 
 	private void initializeHashFunctions() {
 		int number_of_hash_functions;

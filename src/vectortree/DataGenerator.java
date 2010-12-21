@@ -41,11 +41,11 @@ public class DataGenerator {
 		int[] key_set = new int[size];
 
 		int overlap_size = (int) (size * overlap);
-
+		
 		for (int i = 0; i < overlap_size; i++)
 			key_set[i] = other_set[r.nextInt(other_set.length)];
 		for (int i = overlap_size; i < size; i++)
-			key_set[i] = other_set[r.nextInt(MAX_KEY_VALUE)];
+			key_set[i] = r.nextInt(MAX_KEY_VALUE);
 
 		Arrays.sort(key_set);
 		for (int i = 1; i < size; i++)
