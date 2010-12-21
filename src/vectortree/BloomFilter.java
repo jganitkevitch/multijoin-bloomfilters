@@ -61,7 +61,10 @@ public class BloomFilter {
 		int number_of_hash_functions;
 		
 		int big_prime_int = (int) bigPrime;
-		number_of_hash_functions = (int) Math.floor(Math.log(2) * bitSet.length() / expectedNumberOfObjects);
+		number_of_hash_functions = (int) Math.floor(Math.log(2) * bitSet.size() / expectedNumberOfObjects);
+		
+		System.err.println(number_of_hash_functions);
+		
 		if (number_of_hash_functions == 0) number_of_hash_functions = 1;
 		
 		hashFunctions = new long[number_of_hash_functions][2];
@@ -88,5 +91,23 @@ public class BloomFilter {
 			ret = BigInteger.probablePrime(numBits, r);
 		} while (ret.compareTo(maxLong) > 1);
 		return ret.longValue();
+	}
+	
+	public static void main(String[] args) {
+		BloomFilter bf1 = new BloomFilter(1l, 1 << 20, 100000);
+
+		bf1.add(1);
+		System.out.println(bf1.bitSet);
+		bf1.add(2);
+		System.out.println(bf1.bitSet);
+		bf1.add(3);
+		System.out.println(bf1.bitSet);
+		
+		BloomFilter bf2 = new BloomFilter(1l, 1 << 20, 100000);
+		bf2.add(1);
+		System.out.println(bf2.bitSet);
+		
+		System.out.println(bf1.intersect(bf2));
+		
 	}
 }
