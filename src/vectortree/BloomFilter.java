@@ -62,9 +62,13 @@ public class BloomFilter {
 		int number_of_hash_functions;
 
 		int big_prime_int = (int) bigPrime;
-		number_of_hash_functions = (int) Math.floor(Math.log(2) * bitSet.size() / expectedNumberOfObjects);
 
-		System.err.println(number_of_hash_functions);
+//		number_of_hash_functions = (int) Math.floor(Math.log(2) * (filterSize / expectedNumberOfObjects));
+		trace("a: " + Math.log(2) + ", fs: " + filterSize + ", bss: " + bitSet.size() + ", eno: " + expectedNumberOfObjects);
+//		number_of_hash_functions = 1 + (int) Math.floor(Math.log(2) * (expectedNumberOfObjects / bitSet.size()));
+		number_of_hash_functions = (int) Math.floor(Math.log(2) * filterSize / expectedNumberOfObjects);
+
+		trace("number_of_hash_functions: " + number_of_hash_functions);
 
 		if (number_of_hash_functions == 0) number_of_hash_functions = 1;
 
@@ -98,38 +102,66 @@ public class BloomFilter {
 		
 		// if we are passed no bloom filters, indicate no overlap
 		if (bloom_filters.size() == 0) {
+			trace("No bloom-filters were passed");
 			return 0;
 		}
 		
 		BloomFilter initial_filter = bloom_filters.get(0);
 
 		BitSet intersection = (BitSet) initial_filter.bitSet.clone();
-				
+
 		for (BloomFilter bloom_filter : bloom_filters) {
 			intersection.and(bloom_filter.bitSet);
+			
+			System.out.println("mway:   " + intersection.cardinality());
 		}
 
 		return (intersection.cardinality() / initial_filter.hashFunctions.length);
 	}
+
+	public static void trace(String msg) {
+		System.out.println(msg);
+	}
+
 	
 	public static void main(String[] args) {
-		BloomFilter bf1 = new BloomFilter(1l, 1 << 20, 100000);
 
+		BloomFilter bf1 = new BloomFilter(1l, 1 << 20, 100000);
+		BloomFilter bf2 = new BloomFilter(1l, 1 << 20, 100000);
+		BloomFilter bf3 = new BloomFilter(1l, 1 << 20, 100000);
+		
 		bf1.add(1);
-		System.out.println("bf1 1: " + bf1.bitSet);
 		bf1.add(2);
-		System.out.println("bf1 2: " + bf1.bitSet);
 		bf1.add(3);
-		System.out.println("bf1 3: " + bf1.bitSet);
 		bf1.add(3);
 		bf1.add(4);
+		bf1.add(12);
+		bf1.add(14);
+		bf1.add(16);
 
-		BloomFilter bf2 = new BloomFilter(1l, 1 << 20, 100000);
 		bf2.add(1);
 		bf2.add(3);
-		System.out.println("bf2: " + bf2.bitSet);
+		bf2.add(6);
+		bf2.add(16);
+
+		bf3.add(4);
+		bf3.add(7);
+		bf3.add(9);
+		bf3.add(13);
+		bf3.add(17);
 
 		System.out.println(bf1.intersect(bf2));
+		
+		ArrayList<BloomFilter> bloom_filters1 = new ArrayList<BloomFilter>();
+		ArrayList<BloomFilter> bloom_filters2 = new ArrayList<BloomFilter>();
+		bloom_filters1.add(bf1);
+		bloom_filters1.add(bf2);
+		System.out.println(BloomFilter.intersectMutiway(bloom_filters1));
+		
+		bloom_filters2.add(bf1);
+		bloom_filters2.add(bf2);
+		bloom_filters2.add(bf3);
+		System.out.println(BloomFilter.intersectMutiway(bloom_filters2));
 
 	}
 }
