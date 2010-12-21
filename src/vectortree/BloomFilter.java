@@ -38,16 +38,16 @@ public class BloomFilter {
 
 	public void add(int key) {
 		
-		System.err.println("BEFORE: " + this.bitSet);
+//		System.err.println("BEFORE: " + this.bitSet);
 		
-		System.err.println("ADDING: " + key + " (FUNCTIONS: " + hashFunctions.length + ")");
+//		System.err.println("ADDING: " + key + " (FUNCTIONS: " + hashFunctions.length + ")");
 		
 		for (long [] h : hashFunctions) {
 			int i = hash(h, (long) key);
 			bitSet.set(i);
 		}
 		
-		System.err.println("AFTER: " + this.bitSet);
+//		System.err.println("AFTER: " + this.bitSet);
 	}
 
 	public boolean query(int key) {
@@ -70,12 +70,10 @@ public class BloomFilter {
 
 		int big_prime_int = (int) bigPrime;
 
-//		number_of_hash_functions = (int) Math.floor(Math.log(2) * (filterSize / expectedNumberOfObjects));
-		trace("a: " + Math.log(2) + ", fs: " + filterSize + ", bss: " + bitSet.size() + ", eno: " + expectedNumberOfObjects);
-//		number_of_hash_functions = 1 + (int) Math.floor(Math.log(2) * (expectedNumberOfObjects / bitSet.size()));
 		number_of_hash_functions = (int) Math.floor(Math.log(2) * filterSize / expectedNumberOfObjects);
 
-		trace("number_of_hash_functions: " + number_of_hash_functions);
+//		trace("a: " + Math.log(2) + ", fs: " + filterSize + ", bss: " + bitSet.size() + ", eno: " 
+//				+ expectedNumberOfObjects + ", number_of_hash_functions: " + number_of_hash_functions);
 
 		if (number_of_hash_functions == 0) number_of_hash_functions = 1;
 
@@ -120,9 +118,11 @@ public class BloomFilter {
 		for (BloomFilter bloom_filter : bloom_filters) {
 			intersection.and(bloom_filter.bitSet);
 			
-			System.out.println("mway:   " + intersection.cardinality());
+//			System.out.println("mway:   " + intersection.cardinality());
 		}
-
+//		trace("Results in: " + intersection.cardinality()  + " / " + initial_filter.hashFunctions.length +
+//				" = " + (intersection.cardinality() / initial_filter.hashFunctions.length));
+		
 		return (intersection.cardinality() / initial_filter.hashFunctions.length);
 	}
 

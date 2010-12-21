@@ -98,7 +98,7 @@ public class VectorTree {
 		// records whether the previous vector was modified
 		boolean change_occurred = false;
 		
-		trace("INSERT key " + key);
+//		trace("INSERT key " + key);
 		
 		// now we'll work our way up the tree, to the root
 		for (short shift = bits_per_level; shift < Integer.SIZE; shift += bits_per_level) {
@@ -109,7 +109,7 @@ public class VectorTree {
 			int subkey = (key >> shift) >> bits_per_level;
 			byte vector = (byte)((byte)(key >> shift) & 0x0f);
 
-			trace("   depth: " + ((bits_per_key - shift) / bits_per_level) + "(" + depth + "), subkey " + subkey + ", " + vector);
+//			trace("   depth: " + ((bits_per_key - shift) / bits_per_level) + "(" + depth + "), subkey " + subkey + ", " + vector);
 
 			// extract the node for this bit-sequence
 			VectorTreeNode node = getNode(subkey, depth);
@@ -384,11 +384,11 @@ public class VectorTree {
 		// are there any survivors?
 		int survivors = getBloomFilterSurvivors(prefix, depth, trees);
 		if (survivors == 0) {
-			trace("***** Bloom Filter says 'no matches' at depth " + depth + " *****");
+//			trace("***** Bloom Filter says 'no matches' at depth " + depth + " *****");
 			// if not, stop descending
 			return;
 		} else {
-			trace("Depth: " + depth + " Survivors: " + survivors);
+//			trace("Depth: " + depth + " Survivors: " + survivors);
 		}
 
 		short vector_intersection = getIntersection(prefix, depth, trees);
@@ -426,7 +426,7 @@ public class VectorTree {
 			bloom_filters.add(tree.getNode(key, depth).getBloomFilter());
 		}
 		
-		System.out.println("intersecting " + bloom_filters.size() + " bloom filters at depth " + depth);
+//		System.out.println("intersecting " + bloom_filters.size() + " bloom filters at depth " + depth);
 		
 		return BloomFilter.intersectMutiway(bloom_filters);
 	}
@@ -619,7 +619,7 @@ public class VectorTree {
 		vt1.insert(33, new Record());
 		vt1.insert(39, new Record());
 		vt1.insert(55, new Record());
-		vt1.insert(600, new Record());
+//		vt1.insert(600, new Record());
 
 		vt2.insert(2, new Record());
 		vt2.insert(18, new Record());
@@ -770,8 +770,84 @@ public class VectorTree {
 
 		System.out.println(s1.size() + " gold");
 	}
+	
+	
+	public static void testMultiIntersect(int num) {
+
+		System.err.print("Initializing.. ");
+
+		ArrayList<VectorTree> vector_trees = new ArrayList<VectorTree>(num);
+		int[][] key_sets = new int[num][];
+
+		for (int i=0; i<num; i++)
+			vector_trees.add(new VectorTree());
+
+		key_sets[0] = DataGenerator.generateUniform(100000, 0.2);
+		for (int i=1; i<num; i++)
+			key_sets[i] = DataGenerator.generateOverlapping(100000, key_sets[0], 0.3);
+
+		System.err.println("..done.");
+		System.err.print("Inserting.. ");
+
+		for (int i=0; i<num; i++) {
+			VectorTree vt = vector_trees.get(i);
+			for (int j=0; j<key_sets[i].length; j++) {
+				Record record = new Record();
+				record.set("1", key_sets[i][j]);
+
+				vt.insert(record.get("1"), record);
+			}
+		}
+		System.err.println("..done.");
+
+		trace("leaves/subnodes: " + vector_trees.get(0)._root.getLeaves() + "/" + vector_trees.get(0)._root.getSubnodes());
+
+		System.err.println("Intersecting without bloom filters.. ");
+		VectorTreeIterator iterator = null;
+
+		long startTime = System.nanoTime();
+		long endTime;
+		try {
+			for (int n=0; n<10; n++)
+				iterator = VectorTree.intersect(vector_trees, false);
+		} finally {
+		  endTime = System.nanoTime();
+		}
+		long no_bloom_duration = endTime - startTime;
+		System.err.println("..done (" + (no_bloom_duration / 1000000.0) + "ms).");
+
+		System.err.println("Intersecting with bloom filters.. ");
+		
+		startTime = System.nanoTime();
+		try {
+			for (int n=0; n<10; n++)
+				iterator = VectorTree.intersect(vector_trees, true);
+		} finally {
+		  endTime = System.nanoTime();
+		}
+		long bloom_duration = endTime - startTime;
+		System.err.println("..done (" + (bloom_duration / 1000000.0) + "ms).");
+		
+		System.out.println("Trial:");
+		int counter = 0;
+		while(iterator.hasNext()) {
+			iterator.next();
+			counter++;
+		}
+
+		System.out.println(counter + " total");
+		System.out.println("\npreparing gold...");
+
+//		HashSet<Integer> s1 = new HashSet<Integer>(vt1list);		
+//		s1.retainAll(vt2list);
+////		s1.retainAll(vt3list);
+//
+//		System.out.println(s1.size() + " gold");
+	}
+
 
 	public static void main(String[] args) throws IOException {
-		test4();
+//		test4();
+		testMultiIntersect(4);
 	}
 }
