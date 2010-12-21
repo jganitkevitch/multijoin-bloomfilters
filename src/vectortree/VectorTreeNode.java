@@ -15,9 +15,12 @@ public class VectorTreeNode {
 		_leaves = 0;
 		_subnodes = 0;
 		_depth = depth;
-		
-		int filter_size = 1 << (20 - depth);
+
+		int filter_size = 1 << (bits_per_key / 2 - _depth);
+
 		int expected_number_of_objects = new Double(Math.pow(2, bits_per_key - bits_per_level * depth)).intValue();
+
+		trace("filter_size " + filter_size + ", expected_number_of_objects: " + expected_number_of_objects);
 		
 		System.err.println("Expecting: " + expected_number_of_objects + " at depth " + depth);
 		
@@ -50,6 +53,10 @@ public class VectorTreeNode {
 
 	public void increaseSubnodesBy(int amount) {
 		_subnodes += amount;
+	}
+	
+	public static void trace(String msg) {
+		System.out.println(msg);
 	}
 
 	public static void main(String[] args) throws IOException {
