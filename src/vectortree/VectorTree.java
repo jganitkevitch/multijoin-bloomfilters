@@ -97,8 +97,10 @@ public class VectorTree {
 		
 		// records whether the previous vector was modified
 		boolean change_occurred = false;
-		int subnodesFromPrevious = 0;
 		
+		trace("INSERT key " + key);
+		
+		// now we'll work our way up the tree, to the root
 		for (short shift = bits_per_level; shift < Integer.SIZE; shift += bits_per_level) {
 
 			// extract subkey and bit-sequence
@@ -106,7 +108,9 @@ public class VectorTree {
 			// shifting occurs in two stages, since shift=32 is ignored
 			int subkey = (key >> shift) >> bits_per_level;
 			byte vector = (byte)((byte)(key >> shift) & 0x0f);
-					
+
+			trace("   depth: " + ((bits_per_key - shift) / bits_per_level) + "(" + depth + "), subkey " + subkey + ", " + vector);
+
 			// extract the node for this bit-sequence
 			VectorTreeNode node = getNode(subkey, depth);
 			
@@ -135,7 +139,6 @@ public class VectorTree {
 			
 			// update bloom filter
 			node.getBloomFilter().add(key);
-			System.out.println("adding " + key + " to V.T.");
 			
 			depth--;
 		}
@@ -187,7 +190,6 @@ public class VectorTree {
 
 			int current_shift = (height - depth) * bits_per_level;
 			int current_key = key >> current_shift;
-			byte current_vector = (byte)(current_key & 0x0f);
 
 			int previous_shift = (height - depth - 1) * bits_per_level;
 			int previous_key = key >> previous_shift;
@@ -382,11 +384,11 @@ public class VectorTree {
 		// are there any survivors?
 		int survivors = getBloomFilterSurvivors(prefix, depth, trees);
 		if (survivors == 0) {
-			System.err.println("Bloom Filter says skip");
+			trace("***** Bloom Filter says 'no matches' at depth " + depth + " *****");
 			// if not, stop descending
 			return;
 		} else {
-			System.err.println("Depth: " + depth + " Survivors: " + survivors);
+			trace("Depth: " + depth + " Survivors: " + survivors);
 		}
 
 		short vector_intersection = getIntersection(prefix, depth, trees);
@@ -423,6 +425,8 @@ public class VectorTree {
 		for (VectorTree tree : trees) {
 			bloom_filters.add(tree.getNode(key, depth).getBloomFilter());
 		}
+		
+		System.out.println("intersecting " + bloom_filters.size() + " bloom filters at depth " + depth);
 		
 		return BloomFilter.intersectMutiway(bloom_filters);
 	}
@@ -605,6 +609,77 @@ public class VectorTree {
 		System.out.println(s1.size() + " gold");
 	}
 
+	public static void test4() {
+		VectorTree vt1 = new VectorTree();
+		VectorTree vt2 = new VectorTree();
+		VectorTree vt3 = new VectorTree();
+
+		vt1.insert(1, new Record());
+		vt1.insert(17, new Record());
+		vt1.insert(33, new Record());
+		vt1.insert(39, new Record());
+		vt1.insert(55, new Record());
+		vt1.insert(600, new Record());
+
+		vt2.insert(2, new Record());
+		vt2.insert(18, new Record());
+		vt2.insert(34, new Record());
+		vt2.insert(40, new Record());
+		vt2.insert(56, new Record());
+		vt2.insert(600, new Record());
+
+		vt3.insert(4, new Record());
+		vt3.insert(7, new Record());
+		vt3.insert(9, new Record());
+		vt3.insert(13, new Record());
+		vt3.insert(17, new Record());
+		vt3.insert(600, new Record());
+
+
+		ArrayList<VectorTree> trees2 = new ArrayList<VectorTree>();
+//		ArrayList<VectorTree> trees3 = new ArrayList<VectorTree>();
+
+		trees2.add(vt1);
+		trees2.add(vt2);
+
+//		trees3.add(vt1);
+//		trees3.add(vt2);
+//		trees3.add(vt3);
+
+		VectorTreeIterator iterator0 = VectorTree.intersect(trees2, false);
+		VectorTreeIterator iterator1 = VectorTree.intersect(trees2, true);
+
+		int counter = 0;
+
+		counter = 0;
+		System.out.println("trial 1");
+		while(iterator1.hasNext()) {
+			Integer q1 = iterator1.next();
+			trace(" . . t1:" + q1);
+			counter++;
+		}
+		System.out.println(counter + " total");
+/*
+		counter = 0;
+		System.out.println("trial 2");
+		while(iterator2.hasNext()) {
+			Integer q2 = iterator2.next();
+			trace(" . . t2:" + q2);
+			counter++;
+		}
+		System.out.println(counter + " total");
+*/		
+		/*
+		System.out.println("\npreparing gold...");
+		
+		HashSet<Integer> s1 = new HashSet<Integer>(vt1list);
+		s1.retainAll(vt2list);
+		s1.retainAll(vt3list);
+
+		System.out.println(s1.size() + " gold");
+		*/
+	}
+
 	public static void test3() {
 		
 		VectorTree vt1 = new VectorTree();
@@ -697,6 +772,6 @@ public class VectorTree {
 	}
 
 	public static void main(String[] args) throws IOException {
-		test2();
+		test4();
 	}
 }
