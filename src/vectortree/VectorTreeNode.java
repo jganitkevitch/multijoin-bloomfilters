@@ -16,8 +16,10 @@ public class VectorTreeNode {
 		_subnodes = 0;
 		_depth = depth;
 		
-		int filter_size = 1 << 20;
+		int filter_size = 1 << (20 - depth);
 		int expected_number_of_objects = new Double(Math.pow(2, bits_per_key - bits_per_level * depth)).intValue();
+		
+		System.err.println("Expecting: " + expected_number_of_objects + " at depth " + depth);
 		
 		_bloom_filter = new BloomFilter(depth, filter_size, expected_number_of_objects);
 	}

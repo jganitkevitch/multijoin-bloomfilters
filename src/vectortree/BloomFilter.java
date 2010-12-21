@@ -37,10 +37,17 @@ public class BloomFilter {
 	}
 
 	public void add(int key) {
+		
+		System.err.println("BEFORE: " + this.bitSet);
+		
+		System.err.println("ADDING: " + key + " (FUNCTIONS: " + hashFunctions.length + ")");
+		
 		for (long [] h : hashFunctions) {
 			int i = hash(h, (long) key);
 			bitSet.set(i);
 		}
+		
+		System.err.println("AFTER: " + this.bitSet);
 	}
 
 	public boolean query(int key) {
@@ -63,8 +70,6 @@ public class BloomFilter {
 
 		int big_prime_int = (int) bigPrime;
 		number_of_hash_functions = (int) Math.floor(Math.log(2) * bitSet.size() / expectedNumberOfObjects);
-
-		System.err.println(number_of_hash_functions);
 
 		if (number_of_hash_functions == 0) number_of_hash_functions = 1;
 

@@ -697,6 +697,6 @@ public class VectorTree {
 	}
 
 	public static void main(String[] args) throws IOException {
-		test2();
+		test3();
 	}
 }
