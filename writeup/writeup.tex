@@ -573,16 +573,16 @@ in our experiments.
 \subsection{Data Generation}
 
 We focus on two factors that we deem important when conducting
-multi-set intersections: data sparsity and data set overlap. While in
-real-world applications keys can't generally be assumed to be
-uniformly distributed, we generate our synthetic key sets from uniform
-distributions\footnote{In fact, we have implemented a method to
-  generate more complex key distributions by combining multiple local
-  uniform or normal distribution, leading to locally denser key
-  sets. However, we did not use this data in our experiments.}. The
-data generation process works as follows: we first determine the
-number $n$ and size $m$ of key sets to intersect, as well as the
-sparsity ratio -- defined as $\sigma =
+multi-set intersections: data sparsity/density and data set
+overlap. While in real-world applications keys can't generally be
+assumed to be uniformly distributed, we generate our synthetic key
+sets from uniform distributions\footnote{In fact, we have implemented
+  a method to generate more complex key distributions by combining
+  multiple local uniform or normal distribution, leading to locally
+  denser key sets. However, we did not use this data in our
+  experiments.}. The data generation process works as follows: we
+first determine the number $n$ and size $m$ of key sets to intersect,
+as well as the density ratio -- defined as $\sigma =
 \frac{\mathit{keys~in~set}}{\mathit{keys~in~scope}}$, where the scope
 is the overall set of keys we draw from uniformly. The size of the
 scope is determined by reversing the rationale and given by
@@ -610,15 +610,63 @@ a particular node \emph{could} hold. I.e.\ the set of all integers
 setting this estimate could be bounded by the total number of objects
 in the database and computed from more sophisticated statistics. The
 result of using an estimate this crude is, that a Bloom filter that
-were able to hold this many object would itself be unreasonably
-large. While attemping to partially amend this problem by making the
-Bloom filter as large as memory permits may be an option it turns out
-to be a bad choice for two reasons: firstly, the resulting bit vectors
-are very large and therefore relatively costly to intersect. Secondly,
-decisions made at nodes close to the tree root (for which we are
-facing this problem) are of very low granularity: eliminations here
-are quite unlikely. This results in a trade-off: instead of querying
-Bloom filter
+were able to reliably hold this many objects would itself be
+unreasonably large. While attemping to partially amend this problem by
+making the Bloom filter as large as memory permits may be an option it
+turns out to be a bad choice for two reasons: firstly, the resulting
+bit vectors are very large and therefore relatively costly to
+intersect. Secondly, decisions made at nodes close to the tree root
+(for which we are facing this problem) are of very low granularity:
+eliminations here are quite unlikely. This results in a trade-off:
+instead of querying Bloom filters at every tree level, we define a
+minimum depth $d_{\mathit{min}}$ for Bloom filter use. We thus attempt
+to save more in memory and computation time than we lose by waiving
+the prediction.
+
+Results for this experiment are shown in
+Figure~\ref{fig_min_depth}. While the times are in the range of
+milliseconds and show rather high variance, we can clearly see that
+the minimum depth has a significant and systematic impact on the
+performance of Vector Trees with Bloom filters. It appears that using
+Bloom filters at the root results in a huge performance hit while a
+too conservative use of Bloom filters results in the loss of the
+performance advantage they offer over vanilla Vector Trees.
+
+\begin{figure}[t]
+\center
+\includegraphics[width=0.98\linewidth]{../data/min_depth.pdf}
+\caption{Milliseconds needed for 100 intersections of 10 sets of
+  100,000 keys each; at 0.6 density and 0.01 overlap.}
+\label{fig_min_depth}
+\end{figure}
+
+To investigate our methods' dependance on data properties, we vary the
+density (Figure~\ref{fig_density}) and overlap
+(Figure~\ref{fig_overlap}) factors. Figure~\ref{fig_density} shows
+that the root set density has virtually no impact on either method's
+performance. The overlap, as Figure~\ref{fig_overlap} demonstrates, on
+the other hand is crucial for intersection speed: while, as expected,
+the Bloom filter enhancement has a very significant advantage on low
+overlap sets, both methods degrade as the overlap between the sets
+grows.
+
+\begin{figure}[t]
+\center
+\includegraphics[width=0.98\linewidth]{../data/density.pdf}
+\caption{Milliseconds needed for 100 intersections of 10 sets of
+  100,000 keys each; at 1\% overlap and 3 minimum depth.}
+\label{fig_density}
+\end{figure}
+
+
+\begin{figure}[t]
+\center
+\includegraphics[width=0.98\linewidth]{../data/overlap.pdf}
+\caption{Milliseconds needed for 100 intersections of 10 sets of
+  100,000 keys each; at 60\% density and 3 minimum depth.}
+\label{fig_overlap}
+\end{figure}
+
 
 
 \section{Future Work}
@@ -634,10 +682,10 @@ In this investigation, we used significant-bits as the partition criteria,
 however, it may be the case that other encodings have distributional properties
 that allow for greater sparsity or dissimilarity between regions.
 
-\subsection{Alternate Encodings}
-In this investigation, we used significant-bits as the partition criteria,
-however, it may be the case that other encodings have distributional properties
-that allow for greater sparsity or dissimilarity between regions.
+\subsection{Bloom Filter}
+The estimate for the number of elements we have used so far is crude
+at best, and could likely be improved, resulting in less memory use
+and faster intersections.
 
 
 \section{Conclusion}
@@ -650,6 +698,12 @@ and $k$ is a measure of data sparsity. This algorithm is efficient in almost
 all cases and does not suffer any severe performance losses on any one
 specific case. There are several improvements were would like to consider
 and those are further discussed in Future Work.
+
+We have also introduced a Bloom filter based enhancement method into
+the Vector Tree structre, that acts as a intersection oracle and
+dramatically improves our method's performance on low-overlap
+intersections.
+
 
 \section*{Acknowledgments}
 The authors would like to thank Wes Filardo for his time and his insight.
