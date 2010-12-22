@@ -3,4 +3,8 @@
 .metadata/
 .project
 bin/
+writeup/writeup.aux
+writeup/writeup.bbl
+writeup/writeup.blg
+writeup/writeup.synctex.gz
 writeup/writeup.log

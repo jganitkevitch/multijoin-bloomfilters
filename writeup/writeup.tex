@@ -22,8 +22,8 @@
 	3400 North Charles Street \\
 	Baltimore, MD 21210, USA\\
 	\And 
-	{Juri Ganitkevic} \\
-	{\tt j.ganitkevitch@gmail.com}\\
+	{Juri Ganitkevitch} \\
+	{\tt j.ganitkevitch@jhu.edu}\\
 	Johns Hopkins University\\
 	3400 North Charles Street \\
 	Baltimore, MD 21210, USA
@@ -191,7 +191,7 @@ which correspond to records.  This distinction is determined by the requester.
 
 \begin{figure}[t]
 \center
-\includegraphics[width=90mm]{db-join.pdf}
+\includegraphics[width=0.98\linewidth]{db-join.pdf}
 \caption{A simple database join.}
 \label{fig:db-join}
 \end{figure}
@@ -248,7 +248,7 @@ which the bit-vectors are symbols in alphabet of size $2^i$.
 
 \begin{figure}[t]
 	\center
-	\includegraphics[width=75mm]{example-vector.pdf}
+	\includegraphics[width=0.98\linewidth]{example-vector.pdf}
 	\caption{An example bit-vector for $i=4$.}
 	\label{fig:example-vector}
 \end{figure}
@@ -309,7 +309,7 @@ key is a member.
 \begin{figure*}[t]
 	\center
 	\fbox{
-		\includegraphics[width=6in]{insertion-05.pdf}}
+		\includegraphics[width=0.98\linewidth]{insertion-05.pdf}}
 \caption{Insertion of a key.}
 \label{fig:insertion-diagram}
 \end{figure*}
@@ -386,7 +386,7 @@ An example of this can be seen in B and C in Figure \ref{fig:intersection-diagra
 
 
 \begin{figure*}[t]
-\center{\fbox{\includegraphics[width=6in]{intersection-06.pdf}}}
+\center{\fbox{\includegraphics[width=0.98\linewidth]{intersection-06.pdf}}}
 \caption{Initial step in the intersection of 3 sets}
 \label{fig:intersection-diagram}
 \end{figure*}
@@ -439,11 +439,76 @@ external access to the potentially numerous objects sharing a key), and
 provides the iterator with sufficient information to recover the matching key
 at time of user request, allowing us to remain in constant-time for each node.
 
-	
-%Begin traversing from root
-%	Among all m trees, does any have memberCount of q, where q is a parameter indicating the threshold for direct-value comparison
-%		if so, find the tree least likely to contain a match in that range.  
-%			fewest members
+% Begin traversing from root Among all m trees, does any have
+% memberCount of q, where q is a parameter indicating the threshold
+% for direct-value comparison if so, find the tree least likely to
+% contain a match in that range.  fewest members
+
+\section{Bloom Filter Guarding}
+
+While our method presents an efficient approach to multi-set
+intersection, there are cases in which an unfortunate distribution of
+the data causes the algorithm to explore the entire tree only to find
+that there are no, or only very few, matches. Consider for instance
+sparse, uniformly distributed sets with little overlap. While the
+uniformity will for many sets result in a full Vector Tree, the
+sparsity entails that only very few of the leaf nodes actually contain
+matching keys.
+
+We address this issue by introducing Bloom filters, a probabilistic
+data-structure that provides a compact bit-vector representation of
+the keys in the sub-tree rooted in each node.
+
+\subsection{Bloom Filters}
+
+A Bloom filter consists of a bit vector of size $m$ and a set of $k$
+hash functions $h_1, \ldots, h_k$ that map any object to an integer $1
+\ldots m$. To insert an object $o$ into the filter, we compute
+$h_i(o)$ for each hash function and set the corresponding bit in the
+bit vector to 1. To check whether an object is in the Bloom filter, we
+similarly compute the hash indices for each of the $k$ functions and
+test whether the corresponding bits are 1. Since the sets of bits set
+for different objects can overlap (i.e.\ $h_i(o) = h_j(o')$), querys
+to the Bloom filter can result in false positives, however (since a
+bit set to 1 it is never flipped back) never in false negatives. 
+
+Bloom filters have been thoroughly studied and bounds on the false
+positive rate for a given $m$, expected number $n$ of objects to be
+inserted into the filter as well as the optimal $k$ for given $m$ and
+$n$ are readily available in the literature.
+
+\subsection{Use of Bloom Filters in the Vector Tree}
+
+We augment the Vector Tree structure by adding a Bloom filter to each
+node in the tree. Each Bloom filter contains the keys in the subtree
+rooted at its respective node. Furthermore, for a given depth $d$, all
+Bloom filters are of the same size and employ the same set of hash
+functions. This setup makes the resulting bit vectors comparable
+across two or more Vector Trees\footnote{Obviously, we only compare
+  the Bloom filters of nodes that govern the same key prefix.},
+enabling us to use the Bloom filters to obtain information useful in
+the tree intersection process.
+
+When intersecting a set of nodes $n_i$, we first intersect their Bloom
+filters $b_i$ by computing a bit vector $b = \bigwedge_i b_i$ through
+bit-wise intersection of the $b_i$. Since the Bloom filters are of
+equal size and use the same set of hash functions, a key is present in
+all the $b_i$ will be present in $b$. Conversely, if $b$ is all zeros
+we are guaranteed that the $b_i$ do not contain any common
+keys. Furthermore the number of ones in $b$, divided by the number of
+hash functions, $\frac{|b|_1}{k}$, gives us an estimate (and upper
+bound) on the number of common elements in the subtrees. The precision
+of this estimate depends on the false positive rate of the Bloom
+filters
+
+This information can be used to avoid descend into subtrees that
+exhibit identical structure, yet do not contain matching keys. The
+deeper the node is in the Vector Tree, the smaller the range of
+potential keys it covers and the smaller the Bloom filter required to
+maintain an acceptable false positive rate. Additionally, we vary the
+hash function sets used for each depth level, creating a more diverse
+set of Bloom filters that are overall less likely to produce false
+positives over the same data.
 
 \section{Analysis}
 
@@ -495,12 +560,73 @@ search) are limited to examining individual keys.  In $P$, the Vector Tree
 performs comparisons of $2^i$ elements for every single element compared
 in the other approaches.
 
+\section{Experimental Results}
+
+The space over which we aim to obtain performance results is a highly
+parametrized one. We conduct our experiments on synthetic data, i.e.\
+randomly generated sets of keys. This approach provides us with good
+control over the nature of the task we evaluate on. We describe the
+data generation procedure in the following sub-section and then
+proceed to present a selection of performance statistics we obtained
+in our experiments.
+
+\subsection{Data Generation}
+
+We focus on two factors that we deem important when conducting
+multi-set intersections: data sparsity and data set overlap. While in
+real-world applications keys can't generally be assumed to be
+uniformly distributed, we generate our synthetic key sets from uniform
+distributions\footnote{In fact, we have implemented a method to
+  generate more complex key distributions by combining multiple local
+  uniform or normal distribution, leading to locally denser key
+  sets. However, we did not use this data in our experiments.}. The
+data generation process works as follows: we first determine the
+number $n$ and size $m$ of key sets to intersect, as well as the
+sparsity ratio -- defined as $\sigma =
+\frac{\mathit{keys~in~set}}{\mathit{keys~in~scope}}$, where the scope
+is the overall set of keys we draw from uniformly. The size of the
+scope is determined by reversing the rationale and given by
+$\frac{m}{\sigma}$. We then generate a root key set by uniformly
+drawing $m$ keys from a set of $\frac{m}{\sigma}$. Next, we set an
+overlap factor $\omega =
+\frac{\mathit{keys~shared~with~root~set}}{\mathit{keys~in~set}}$. The
+remainder of the sets are then constructed by uniformly drawing from
+the root set until $\omega$ is fulfilled and padded with keys drawn
+uniformly from the set of all possible integers.
+
+\subsection{Experiments}
+
+Here, we present performance results for multiset intersections using
+the Vector Tree structure, with and without the Bloom filter
+augmentation. Aside from the number, size, sparisity and overlap of
+the data sets, we also investigate two parameters that affect the
+Bloom filters themselves. 
+
+As mentioned earlier, Bloom filters rely on an estimate of the number
+of keys they will hold to parametrize optimally. In our setup, this
+estimate is very crude: we simply use the maximum number of keys that
+a particular node \emph{could} hold. I.e.\ the set of all integers
+($2^{32}$ in Java) at the root node etc. Clearly, in a more realistic
+setting this estimate could be bounded by the total number of objects
+in the database and computed from more sophisticated statistics. The
+result of using an estimate this crude is, that a Bloom filter that
+were able to hold this many object would itself be unreasonably
+large. While attemping to partially amend this problem by making the
+Bloom filter as large as memory permits may be an option it turns out
+to be a bad choice for two reasons: firstly, the resulting bit vectors
+are very large and therefore relatively costly to intersect. Secondly,
+decisions made at nodes close to the tree root (for which we are
+facing this problem) are of very low granularity: eliminations here
+are quite unlikely. This results in a trade-off: instead of querying
+Bloom filter
+
+
 \section{Future Work}
 \subsection{Greater Bit Length}
 In practice, $i=4$ is the highest feasible bit-length that allows the constant-time
 strategies we employed here.  This is because {\tt SurvivorMap} must encode
 all $2^{2^i}$ combinations of vector combinations.  With $i=4$, this means
-65536 keys, but for $i=8$, this would require $2^{2^8}=2^256=1.1579\times10^{77}$
+65536 keys, but for $i=8$, this would require $2^{2^8}=2^{256}=1.1579\times10^{77}$
 keys.  However, there may be intermediate values that are viable.
 
 \subsection{Alternate Encodings}

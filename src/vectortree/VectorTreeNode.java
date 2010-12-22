@@ -19,7 +19,7 @@ public class VectorTreeNode {
 		int expected_number_of_bits = bits_per_key - bits_per_level * depth;
 		int expected_number_of_objects = new Double(Math.pow(2, expected_number_of_bits)).intValue();
 		
-		int filter_size = (expected_number_of_bits >= 5) ? 1 : 1 << (expected_number_of_bits + 2);
+		int filter_size = (depth <= VectorTree.max_bloom_level) ? 1 : 1 << (expected_number_of_bits + VectorTree.bloom_size_offset);
 
 //		trace("depth " +  depth  + ", filter_size " + filter_size + ", expected_number_of_objects: " + expected_number_of_objects);
 		

@@ -7,6 +7,17 @@ import java.util.LinkedList;
 
 public class VectorTree {
 
+	public static int max_bloom_level = 12;
+	public static int bloom_size_offset = 2;
+	
+	private static int num_sets = 4;
+	private static int set_size = 1000000;
+	private static double set_density = 0.2;
+	private static double set_overlap = 0.2;
+	private static int repetitions = 10;
+	
+	private static int bloom_hits = 0;
+	
 	// static tree properties
 	private static short bits_per_level = 4;
 	private static short bits_per_key = Integer.SIZE;
@@ -386,6 +397,7 @@ public class VectorTree {
 		if (survivors == 0) {
 //			trace("***** Bloom Filter says 'no matches' at depth " + depth + " *****");
 			// if not, stop descending
+			bloom_hits++;
 			return;
 		} else {
 //			trace("Depth: " + depth + " Survivors: " + survivors);
@@ -772,24 +784,24 @@ public class VectorTree {
 	}
 	
 	
-	public static void testMultiIntersect(int num) {
+	public static void testMultiIntersect() {
 
-		System.err.print("Initializing.. ");
+//		System.err.print("Initializing.. ");
 
-		ArrayList<VectorTree> vector_trees = new ArrayList<VectorTree>(num);
-		int[][] key_sets = new int[num][];
-
-		for (int i=0; i<num; i++)
+		ArrayList<VectorTree> vector_trees = new ArrayList<VectorTree>(num_sets);
+		int[][] key_sets = new int[num_sets][];
+		
+		for (int i=0; i<num_sets; i++)
 			vector_trees.add(new VectorTree());
 
-		key_sets[0] = DataGenerator.generateUniform(100000, 0.2);
-		for (int i=1; i<num; i++)
-			key_sets[i] = DataGenerator.generateOverlapping(100000, key_sets[0], 0.3);
+		key_sets[0] = DataGenerator.generateUniform(set_size, set_density);
+		for (int i=1; i<num_sets; i++)
+			key_sets[i] = DataGenerator.generateOverlapping(set_size, key_sets[0], set_overlap);
 
-		System.err.println("..done.");
-		System.err.print("Inserting.. ");
+//		System.err.println("..done.");
+//		System.err.print("Inserting.. ");
 
-		for (int i=0; i<num; i++) {
+		for (int i=0; i<num_sets; i++) {
 			VectorTree vt = vector_trees.get(i);
 			for (int j=0; j<key_sets[i].length; j++) {
 				Record record = new Record();
@@ -798,56 +810,56 @@ public class VectorTree {
 				vt.insert(record.get("1"), record);
 			}
 		}
-		System.err.println("..done.");
+//		System.err.println("..done.");
 
-		trace("leaves/subnodes: " + vector_trees.get(0)._root.getLeaves() + "/" + vector_trees.get(0)._root.getSubnodes());
+//		trace("leaves/subnodes: " + vector_trees.get(0)._root.getLeaves() + "/" + vector_trees.get(0)._root.getSubnodes());
 
-		System.err.println("Intersecting without bloom filters.. ");
+//		System.err.println("Intersecting without bloom filters.. ");
 		VectorTreeIterator iterator = null;
 
 		long startTime = System.nanoTime();
 		long endTime;
 		try {
-			for (int n=0; n<10; n++)
+			for (int n=0; n<repetitions; n++)
 				iterator = VectorTree.intersect(vector_trees, false);
 		} finally {
 		  endTime = System.nanoTime();
 		}
 		long no_bloom_duration = endTime - startTime;
-		System.err.println("..done (" + (no_bloom_duration / 1000000.0) + "ms).");
+		System.out.print((no_bloom_duration / 1000000.0) + "\t");
 
-		System.err.println("Intersecting with bloom filters.. ");
+//		System.err.println("Intersecting with bloom filters.. ");
 		
 		startTime = System.nanoTime();
 		try {
-			for (int n=0; n<10; n++)
+			for (int n=0; n<repetitions; n++) {
+				bloom_hits = 0;
 				iterator = VectorTree.intersect(vector_trees, true);
+			}
 		} finally {
 		  endTime = System.nanoTime();
 		}
 		long bloom_duration = endTime - startTime;
-		System.err.println("..done (" + (bloom_duration / 1000000.0) + "ms).");
-		
-		System.out.println("Trial:");
-		int counter = 0;
-		while(iterator.hasNext()) {
-			iterator.next();
-			counter++;
-		}
-
-		System.out.println(counter + " total");
-		System.out.println("\npreparing gold...");
-
-//		HashSet<Integer> s1 = new HashSet<Integer>(vt1list);		
-//		s1.retainAll(vt2list);
-////		s1.retainAll(vt3list);
-//
-//		System.out.println(s1.size() + " gold");
+		System.out.println((bloom_duration / 1000000.0) + "\t" + bloom_hits);
 	}
 
 
 	public static void main(String[] args) throws IOException {
+		
+		if (args.length < 7) {
+			System.err.println("Arguments: max_bloom_lvl bloom_size_offset num_sets set_size set_density set_overlap repetitions");
+			return;
+		}
+		
+		max_bloom_level = Integer.parseInt(args[0]);
+		bloom_size_offset =  Integer.parseInt(args[1]);
+		num_sets = Integer.parseInt(args[2]);
+		set_size = Integer.parseInt(args[3]);
+		set_density = Double.parseDouble(args[4]);
+		set_overlap = Double.parseDouble(args[5]);
+		repetitions = Integer.parseInt(args[6]);
+		
 //		test4();
-		testMultiIntersect(4);
+		testMultiIntersect();
 	}
 }
